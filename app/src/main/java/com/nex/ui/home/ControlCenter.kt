@@ -27,7 +27,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Slider
@@ -43,6 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -112,12 +112,14 @@ fun ControlCenter(
         Kiosk.apply(activity, isolate)
     }
 
+    val panelShape = RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp)
+
     Box(Modifier.fillMaxSize()) {
         AnimatedVisibility(visible = visible, enter = fadeIn(), exit = fadeOut()) {
             Box(
                 Modifier
                     .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.55f))
+                    .background(Color.Black.copy(alpha = 0.6f))
                     .tap(onDismiss)
             )
         }
@@ -131,8 +133,9 @@ fun ControlCenter(
             Column(
                 Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp))
-                    .background(Color(0xF2121426))
+                    .clip(panelShape)
+                    .background(Color(0xFF0A0A0A))
+                    .border(1.dp, NexColors.Line, panelShape)
                     .pointerInput(Unit) {
                         var total = 0f
                         detectVerticalDragGestures(
@@ -152,13 +155,13 @@ fun ControlCenter(
                 Text(
                     t("ctrl_title"),
                     color = NexColors.TextPrimary,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium
                 )
                 Spacer(Modifier.height(18.dp))
 
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Tile(Modifier.weight(1f), "📶", t("wifi"), online) {
+                    Tile(Modifier.weight(1f), t("wifi"), if (online) "ON" else "OFF", online) {
                         val intent = if (Build.VERSION.SDK_INT >= 29) {
                             Intent(Settings.Panel.ACTION_INTERNET_CONNECTIVITY)
                         } else {
@@ -166,22 +169,22 @@ fun ControlCenter(
                         }
                         openSystem(intent)
                     }
-                    Tile(Modifier.weight(1f), "🔵", t("bluetooth"), false) {
+                    Tile(Modifier.weight(1f), t("bluetooth"), null, false) {
                         openSystem(Intent(Settings.ACTION_BLUETOOTH_SETTINGS))
                     }
-                    Tile(Modifier.weight(1f), "🔦", t("flash"), flash) { toggleFlash() }
-                    Tile(Modifier.weight(1f), "🛡️", t("isolate"), isolate) { toggleIsolation() }
+                    Tile(Modifier.weight(1f), t("flash"), if (flash) "ON" else "OFF", flash) { toggleFlash() }
+                    Tile(Modifier.weight(1f), t("isolate"), if (isolate) "ON" else "OFF", isolate) { toggleIsolation() }
                 }
 
-                Spacer(Modifier.height(18.dp))
+                Spacer(Modifier.height(22.dp))
 
-                SliderRow(t("brightness"), "☀️", brightness) {
+                SliderRow(t("brightness"), brightness) {
                     brightness = it
                     val lp = activity.window.attributes
                     lp.screenBrightness = it.coerceIn(0.02f, 1f)
                     activity.window.attributes = lp
                 }
-                SliderRow(t("volume"), "🔊", volume) {
+                SliderRow(t("volume"), volume) {
                     volume = it
                     try {
                         audio.setStreamVolume(AudioManager.STREAM_MUSIC, (it * maxVol).roundToInt(), 0)
@@ -192,14 +195,14 @@ fun ControlCenter(
                 Spacer(Modifier.height(14.dp))
                 Text(t("ctrl_hint"), color = NexColors.TextDim, fontSize = 12.sp, lineHeight = 18.sp)
 
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(14.dp))
                 Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                     Box(
                         Modifier
-                            .width(40.dp)
-                            .height(4.dp)
+                            .width(36.dp)
+                            .height(3.dp)
                             .clip(RoundedCornerShape(2.dp))
-                            .background(Color.White.copy(alpha = 0.25f))
+                            .background(NexColors.Line)
                     )
                 }
             }
@@ -210,49 +213,62 @@ fun ControlCenter(
 @Composable
 private fun Tile(
     modifier: Modifier,
-    emoji: String,
     label: String,
+    state: String?,
     active: Boolean,
     onClick: () -> Unit
 ) {
-    val shape = RoundedCornerShape(22.dp)
-    Column(modifier.tap(onClick), horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(
-            modifier = Modifier
-                .size(68.dp)
-                .clip(shape)
-                .background(if (active) NexColors.Cyan.copy(alpha = 0.28f) else Color.White.copy(alpha = 0.08f))
-                .border(
-                    1.dp,
-                    if (active) NexColors.Cyan.copy(alpha = 0.6f) else Color.White.copy(alpha = 0.10f),
-                    shape
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(emoji, fontSize = 28.sp)
+    val shape = RoundedCornerShape(20.dp)
+    val fill = if (active) Color.White else NexColors.Surface
+    val fg = if (active) Color.Black else NexColors.TextPrimary
+    val sub = if (active) Color.Black.copy(alpha = 0.55f) else NexColors.TextDim
+
+    Column(
+        modifier = modifier
+            .height(76.dp)
+            .clip(shape)
+            .background(fill)
+            .border(1.dp, if (active) Color.White else NexColors.Line, shape)
+            .tap(onClick)
+            .padding(horizontal = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(label, color = fg, fontSize = 12.sp, fontWeight = FontWeight.Medium, maxLines = 1)
+        if (state != null) {
+            Spacer(Modifier.height(4.dp))
+            Text(
+                state,
+                color = sub,
+                fontSize = 10.sp,
+                fontFamily = FontFamily.Monospace,
+                letterSpacing = 1.sp
+            )
         }
-        Spacer(Modifier.height(6.dp))
-        Text(label, color = NexColors.TextDim, fontSize = 11.sp, maxLines = 1)
     }
 }
 
 @Composable
-private fun SliderRow(label: String, emoji: String, value: Float, onChange: (Float) -> Unit) {
-    Column(Modifier.fillMaxWidth().padding(top = 6.dp)) {
-        Text(label, color = NexColors.TextDim, fontSize = 12.sp)
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(emoji, fontSize = 20.sp)
-            Slider(
-                value = value,
-                onValueChange = onChange,
-                modifier = Modifier.weight(1f).padding(horizontal = 10.dp),
-                colors = SliderDefaults.colors(
-                    thumbColor = NexColors.Cyan,
-                    activeTrackColor = NexColors.Cyan,
-                    inactiveTrackColor = Color.White.copy(alpha = 0.15f)
-                )
+private fun SliderRow(label: String, value: Float, onChange: (Float) -> Unit) {
+    Column(Modifier.fillMaxWidth().padding(top = 4.dp)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(label, color = NexColors.TextDim, fontSize = 12.sp)
+            Text(
+                "${(value * 100).roundToInt()}",
+                color = NexColors.TextDim,
+                fontSize = 12.sp,
+                fontFamily = FontFamily.Monospace
             )
         }
+        Slider(
+            value = value,
+            onValueChange = onChange,
+            colors = SliderDefaults.colors(
+                thumbColor = Color.White,
+                activeTrackColor = Color.White,
+                inactiveTrackColor = NexColors.Line
+            )
+        )
     }
 }
 

@@ -24,9 +24,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -40,16 +40,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.LayoutDirection
@@ -115,18 +113,18 @@ fun HomeScreen(activity: FragmentActivity, prefs: NexPrefs) {
 
     val onAppTap: (MockApp) -> Unit = { app ->
         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-        toast = app.label(lang) + " · " + testLabel
+        toast = app.label(lang) + "  ·  " + testLabel
     }
 
     CompositionLocalProvider(
         LocalLayoutDirection provides if (lang == "fa") LayoutDirection.Rtl else LayoutDirection.Ltr
     ) {
-        Box(Modifier.fillMaxSize().wallpaper()) {
+        Box(Modifier.fillMaxSize().background(NexColors.Background)) {
             Column(
                 Modifier
                     .fillMaxSize()
                     .safeDrawingPadding()
-                    .padding(horizontal = 20.dp, vertical = 12.dp)
+                    .padding(horizontal = 24.dp, vertical = 12.dp)
             ) {
                 // Top zone: swipe down here (or tap the status row) -> Nex Control Center
                 Column(
@@ -144,18 +142,18 @@ fun HomeScreen(activity: FragmentActivity, prefs: NexPrefs) {
                         )
                     }
                 ) {
-                    StatusRow(now, battery) { showControl = true }
-                    Spacer(Modifier.height(16.dp))
-                    ClockCard(now, lang, greeting)
+                    StatusRow(battery) { showControl = true }
+                    Spacer(Modifier.height(32.dp))
+                    ClockBlock(now, lang, greeting)
                 }
 
-                Spacer(Modifier.height(20.dp))
+                Spacer(Modifier.height(28.dp))
 
                 HorizontalPager(state = pagerState, modifier = Modifier.weight(1f)) { page ->
                     AppPage(pages[page], lang, onAppTap)
                 }
 
-                PageDots(pagerState.currentPage, pages.size)
+                if (pages.size > 1) PageDots(pagerState.currentPage, pages.size)
                 Spacer(Modifier.height(10.dp))
                 SearchPill(t("search"))
                 Spacer(Modifier.height(14.dp))
@@ -175,8 +173,8 @@ fun HomeScreen(activity: FragmentActivity, prefs: NexPrefs) {
                     color = NexColors.TextPrimary,
                     fontSize = 13.sp,
                     modifier = Modifier
-                        .glass(RoundedCornerShape(50), 0.16f)
-                        .padding(horizontal = 16.dp, vertical = 10.dp)
+                        .card(RoundedCornerShape(50), NexColors.SurfaceHigh, NexColors.Line)
+                        .padding(horizontal = 18.dp, vertical = 10.dp)
                 )
             }
 
@@ -194,7 +192,7 @@ fun HomeScreen(activity: FragmentActivity, prefs: NexPrefs) {
 /* ---------------------------- Pieces ---------------------------- */
 
 @Composable
-private fun StatusRow(now: LocalDateTime, battery: Int, onOpen: () -> Unit) {
+private fun StatusRow(battery: Int, onOpen: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -204,43 +202,38 @@ private fun StatusRow(now: LocalDateTime, battery: Int, onOpen: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            now.format(DateTimeFormatter.ofPattern("HH:mm", Locale.ENGLISH)),
-            color = NexColors.TextPrimary,
-            fontSize = 15.sp,
-            fontWeight = FontWeight.SemiBold
+            "NEX",
+            color = NexColors.TextDim,
+            fontSize = 12.sp,
+            fontFamily = FontFamily.Monospace,
+            letterSpacing = 3.sp
         )
-        Text("Nex  •  🔋 $battery%", color = NexColors.TextDim, fontSize = 13.sp)
+        Text(
+            "$battery%",
+            color = NexColors.TextDim,
+            fontSize = 12.sp,
+            fontFamily = FontFamily.Monospace
+        )
     }
 }
 
 @Composable
-private fun ClockCard(now: LocalDateTime, lang: String, greeting: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .glass(RoundedCornerShape(28.dp))
-            .padding(horizontal = 22.dp, vertical = 18.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(Modifier.weight(1f)) {
-            Text(greeting, color = NexColors.TextDim, fontSize = 13.sp)
-            Text(
-                now.format(DateTimeFormatter.ofPattern("HH:mm", Locale.ENGLISH)),
-                color = Color.White,
-                fontSize = 52.sp,
-                fontWeight = FontWeight.Light
-            )
-            Text(
-                now.format(DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.forLanguageTag(lang))),
-                color = NexColors.TextDim,
-                fontSize = 14.sp
-            )
-        }
-        // demo weather (test data)
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("☀️", fontSize = 34.sp)
-            Text("24°", color = NexColors.TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.Medium)
-        }
+private fun ClockBlock(now: LocalDateTime, lang: String, greeting: String) {
+    Column(Modifier.fillMaxWidth()) {
+        Text(greeting, color = NexColors.TextDim, fontSize = 13.sp)
+        Spacer(Modifier.height(4.dp))
+        Text(
+            now.format(DateTimeFormatter.ofPattern("HH:mm", Locale.ENGLISH)),
+            color = Color.White,
+            fontSize = 76.sp,
+            fontWeight = FontWeight.ExtraLight,
+            letterSpacing = (-2).sp
+        )
+        Text(
+            now.format(DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.forLanguageTag(lang))),
+            color = NexColors.TextDim,
+            fontSize = 14.sp
+        )
     }
 }
 
@@ -248,7 +241,7 @@ private fun ClockCard(now: LocalDateTime, lang: String, greeting: String) {
 private fun AppPage(apps: List<MockApp>, lang: String, onTap: (MockApp) -> Unit) {
     Column(
         modifier = Modifier.fillMaxSize().padding(top = 4.dp),
-        verticalArrangement = Arrangement.spacedBy(18.dp)
+        verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
         apps.chunked(4).forEach { row ->
             Row(Modifier.fillMaxWidth()) {
@@ -268,11 +261,11 @@ private fun AppIcon(app: MockApp, lang: String, showLabel: Boolean, onTap: () ->
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val scale by animateFloatAsState(
-        targetValue = if (pressed) 0.88f else 1f,
-        animationSpec = spring(dampingRatio = 0.5f, stiffness = 500f),
+        targetValue = if (pressed) 0.92f else 1f,
+        animationSpec = spring(dampingRatio = 0.6f, stiffness = 500f),
         label = "icon-press"
     )
-    val shape = RoundedCornerShape(17.dp)
+    val shape = RoundedCornerShape(18.dp)
 
     Column(
         modifier = Modifier
@@ -282,26 +275,24 @@ private fun AppIcon(app: MockApp, lang: String, showLabel: Boolean, onTap: () ->
     ) {
         Box(
             modifier = Modifier
-                .size(60.dp)
+                .size(62.dp)
                 .clip(shape)
-                .background(Brush.verticalGradient(listOf(app.top, app.bottom)))
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(Color.White.copy(alpha = 0.22f), Color.Transparent),
-                        startY = 0f,
-                        endY = 80f
-                    )
-                )
-                .border(0.8.dp, Color.White.copy(alpha = 0.15f), shape),
+                .background(NexColors.Surface)
+                .border(1.dp, if (pressed) Color.White.copy(alpha = 0.5f) else NexColors.Line, shape),
             contentAlignment = Alignment.Center
         ) {
-            Text(app.emoji, fontSize = 28.sp)
+            Text(
+                app.mark,
+                color = Color.White,
+                fontSize = 16.sp,
+                fontFamily = FontFamily.Monospace
+            )
         }
         if (showLabel) {
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(8.dp))
             Text(
                 app.label(lang),
-                color = NexColors.TextPrimary,
+                color = NexColors.TextDim,
                 fontSize = 11.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -313,16 +304,17 @@ private fun AppIcon(app: MockApp, lang: String, showLabel: Boolean, onTap: () ->
 @Composable
 private fun PageDots(current: Int, total: Int) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
         horizontalArrangement = Arrangement.Center
     ) {
         repeat(total) { i ->
             Box(
                 Modifier
                     .padding(horizontal = 3.dp)
-                    .size(if (i == current) 8.dp else 6.dp)
-                    .clip(CircleShape)
-                    .background(Color.White.copy(alpha = if (i == current) 0.9f else 0.3f))
+                    .width(if (i == current) 16.dp else 6.dp)
+                    .height(2.dp)
+                    .clip(RoundedCornerShape(1.dp))
+                    .background(if (i == current) Color.White else NexColors.Line)
             )
         }
     }
@@ -333,11 +325,16 @@ private fun SearchPill(text: String) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(46.dp)
-            .glass(RoundedCornerShape(50)),
-        contentAlignment = Alignment.Center
+            .height(48.dp)
+            .card(RoundedCornerShape(50)),
+        contentAlignment = Alignment.CenterStart
     ) {
-        Text("🔍  $text", color = NexColors.TextDim, fontSize = 14.sp)
+        Text(
+            text,
+            color = NexColors.TextDim,
+            fontSize = 14.sp,
+            modifier = Modifier.padding(horizontal = 20.dp)
+        )
     }
 }
 
@@ -346,7 +343,7 @@ private fun Dock(lang: String, onTap: (MockApp) -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .glass(RoundedCornerShape(30.dp), 0.10f)
+            .card(RoundedCornerShape(30.dp))
             .padding(vertical = 14.dp),
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
@@ -358,11 +355,16 @@ private fun Dock(lang: String, onTap: (MockApp) -> Unit) {
 
 /* ---------------------------- Helpers ---------------------------- */
 
-internal fun Modifier.glass(shape: Shape, alpha: Float = 0.08f): Modifier =
+/** Flat surface with a hairline border. No blur, no gradient. */
+internal fun Modifier.card(
+    shape: Shape,
+    fill: Color = NexColors.Surface,
+    stroke: Color = NexColors.Line
+): Modifier =
     this
         .clip(shape)
-        .background(Color.White.copy(alpha = alpha))
-        .border(1.dp, Color.White.copy(alpha = 0.12f), shape)
+        .background(fill)
+        .border(1.dp, stroke, shape)
 
 @Composable
 internal fun Modifier.tap(onClick: () -> Unit): Modifier =
@@ -371,32 +373,3 @@ internal fun Modifier.tap(onClick: () -> Unit): Modifier =
         indication = null,
         onClick = onClick
     )
-
-private fun Modifier.wallpaper(): Modifier =
-    this
-        .background(
-            Brush.verticalGradient(
-                listOf(Color(0xFF0B1020), Color(0xFF1B1140), Color(0xFF0A1A2E))
-            )
-        )
-        .drawBehind {
-            val r = size.width * 0.8f
-            drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(NexColors.Violet.copy(alpha = 0.35f), Color.Transparent),
-                    center = Offset(size.width * 0.2f, size.height * 0.25f),
-                    radius = r
-                ),
-                radius = r,
-                center = Offset(size.width * 0.2f, size.height * 0.25f)
-            )
-            drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(NexColors.Cyan.copy(alpha = 0.22f), Color.Transparent),
-                    center = Offset(size.width * 0.85f, size.height * 0.78f),
-                    radius = r
-                ),
-                radius = r,
-                center = Offset(size.width * 0.85f, size.height * 0.78f)
-            )
-        }

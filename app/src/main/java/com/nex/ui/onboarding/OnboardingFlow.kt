@@ -6,12 +6,12 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Build
 import android.provider.Settings
-import androidx.biometric.BiometricManager
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -52,7 +52,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -95,7 +98,7 @@ fun OnboardingFlow(
                 .padding(horizontal = 24.dp, vertical = 16.dp)
         ) {
             StepDots(current = step, total = STEP_COUNT)
-            Spacer(Modifier.height(28.dp))
+            Spacer(Modifier.height(36.dp))
 
             AnimatedContent(
                 targetState = step,
@@ -148,11 +151,10 @@ private fun LanguageStep(
                 Text(
                     l.label,
                     color = NexColors.TextPrimary,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Medium,
+                    fontSize = 17.sp,
                     modifier = Modifier.weight(1f)
                 )
-                if (l.code == lang) Text("✓", color = NexColors.Cyan, fontSize = 20.sp)
+                Radio(l.code == lang)
             }
             Spacer(Modifier.height(12.dp))
         }
@@ -180,11 +182,17 @@ private fun WifiStep(
         NexCard(selected = online, onClick = {}) {
             Box(
                 Modifier
-                    .size(12.dp)
+                    .size(10.dp)
                     .clip(CircleShape)
-                    .background(if (online) Color(0xFF34D399) else Color(0xFFF87171))
+                    .then(
+                        if (online) {
+                            Modifier.background(Color.White)
+                        } else {
+                            Modifier.border(1.5.dp, NexColors.TextDim, CircleShape)
+                        }
+                    )
             )
-            Spacer(Modifier.size(12.dp))
+            Spacer(Modifier.size(14.dp))
             Text(
                 if (online) t("wifi_on") else t("wifi_off"),
                 color = NexColors.TextPrimary,
@@ -198,7 +206,7 @@ private fun WifiStep(
             onClick = { activity.startActivity(Intent(Settings.ACTION_WIFI_SETTINGS)) },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text(t("wifi_open"), color = NexColors.Cyan, fontSize = 15.sp)
+            Text(t("wifi_open"), color = NexColors.TextPrimary, fontSize = 15.sp)
         }
     }
 }
@@ -240,7 +248,8 @@ private fun NexIdStep(
             Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(14.dp))
-                .background(Color.White.copy(alpha = 0.05f))
+                .background(NexColors.Surface)
+                .border(1.dp, NexColors.Line, RoundedCornerShape(14.dp))
                 .padding(4.dp)
         ) {
             Segment(t("tab_create"), creating, Modifier.weight(1f)) { creating = true; errorKey = null }
@@ -258,7 +267,7 @@ private fun NexIdStep(
 
         errorKey?.let {
             Spacer(Modifier.height(12.dp))
-            Text(t(it), color = Color(0xFFF87171), fontSize = 14.sp)
+            Text(t(it), color = NexColors.Danger, fontSize = 14.sp)
         }
     }
 }
@@ -302,10 +311,10 @@ private fun BiometricStep(
         Box(
             Modifier
                 .fillMaxWidth()
-                .padding(vertical = 32.dp),
+                .padding(vertical = 40.dp),
             contentAlignment = Alignment.Center
         ) {
-            Text(if (enabled) "✅" else "🔐", fontSize = 72.sp)
+            BioGlyph(done = enabled)
         }
 
         if (!available && !enabled) {
@@ -321,7 +330,7 @@ private fun BiometricStep(
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(t("bio_open"), color = NexColors.Cyan, fontSize = 15.sp)
+                Text(t("bio_open"), color = NexColors.TextPrimary, fontSize = 15.sp)
             }
         }
     }
@@ -341,10 +350,10 @@ private fun StepScaffold(
     content: @Composable ColumnScope.() -> Unit
 ) {
     Column(Modifier.fillMaxSize()) {
-        Text(title, color = NexColors.TextPrimary, fontSize = 30.sp, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(8.dp))
+        Text(title, color = NexColors.TextPrimary, fontSize = 30.sp, fontWeight = FontWeight.Light)
+        Spacer(Modifier.height(10.dp))
         Text(desc, color = NexColors.TextDim, fontSize = 15.sp, lineHeight = 22.sp)
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(28.dp))
 
         Column(
             modifier = Modifier
@@ -361,15 +370,15 @@ private fun StepScaffold(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(54.dp),
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(14.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = NexColors.Cyan,
+                containerColor = Color.White,
                 contentColor = Color.Black,
-                disabledContainerColor = Color.White.copy(alpha = 0.08f),
+                disabledContainerColor = NexColors.SurfaceHigh,
                 disabledContentColor = NexColors.TextDim
             )
         ) {
-            Text(primaryText, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+            Text(primaryText, fontWeight = FontWeight.Medium, fontSize = 16.sp)
         }
 
         if (secondaryText != null) {
@@ -387,9 +396,9 @@ private fun StepDots(current: Int, total: Int) {
             Box(
                 Modifier
                     .weight(1f)
-                    .height(4.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(if (i <= current) NexColors.Cyan else Color.White.copy(alpha = 0.1f))
+                    .height(2.dp)
+                    .clip(RoundedCornerShape(1.dp))
+                    .background(if (i <= current) Color.White else NexColors.Line)
             )
         }
     }
@@ -406,8 +415,8 @@ private fun NexCard(
         modifier = Modifier
             .fillMaxWidth()
             .clip(shape)
-            .background(Color.White.copy(alpha = 0.05f))
-            .border(1.5.dp, if (selected) NexColors.Cyan else Color.White.copy(alpha = 0.08f), shape)
+            .background(NexColors.Surface)
+            .border(1.dp, if (selected) Color.White else NexColors.Line, shape)
             .clickable(onClick = onClick)
             .padding(18.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -416,18 +425,38 @@ private fun NexCard(
 }
 
 @Composable
+private fun Radio(selected: Boolean) {
+    Box(
+        Modifier
+            .size(20.dp)
+            .clip(CircleShape)
+            .border(1.5.dp, if (selected) Color.White else NexColors.Line, CircleShape),
+        contentAlignment = Alignment.Center
+    ) {
+        if (selected) {
+            Box(
+                Modifier
+                    .size(10.dp)
+                    .clip(CircleShape)
+                    .background(Color.White)
+            )
+        }
+    }
+}
+
+@Composable
 private fun Segment(label: String, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(10.dp))
-            .background(if (selected) NexColors.Cyan.copy(alpha = 0.18f) else Color.Transparent)
+            .background(if (selected) Color.White else Color.Transparent)
             .clickable(onClick = onClick)
             .padding(vertical = 12.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
             label,
-            color = if (selected) NexColors.Cyan else NexColors.TextDim,
+            color = if (selected) Color.Black else NexColors.TextDim,
             fontWeight = FontWeight.Medium,
             fontSize = 15.sp
         )
@@ -455,13 +484,39 @@ private fun NexField(
         colors = OutlinedTextFieldDefaults.colors(
             focusedTextColor = NexColors.TextPrimary,
             unfocusedTextColor = NexColors.TextPrimary,
-            focusedBorderColor = NexColors.Cyan,
-            unfocusedBorderColor = Color.White.copy(alpha = 0.15f),
-            focusedLabelColor = NexColors.Cyan,
+            focusedBorderColor = Color.White,
+            unfocusedBorderColor = NexColors.Line,
+            focusedLabelColor = Color.White,
             unfocusedLabelColor = NexColors.TextDim,
-            cursorColor = NexColors.Cyan
+            cursorColor = Color.White
         )
     )
+}
+
+/** Thin line glyph: concentric rings, or a ring with a check once enabled. */
+@Composable
+private fun BioGlyph(done: Boolean) {
+    Canvas(Modifier.size(96.dp)) {
+        val w = 1.5.dp.toPx()
+        val half = size.minDimension / 2f
+        if (done) {
+            drawCircle(color = Color.White, radius = half - w, center = center, style = Stroke(width = w))
+            val p1 = Offset(size.width * 0.30f, size.height * 0.52f)
+            val p2 = Offset(size.width * 0.44f, size.height * 0.66f)
+            val p3 = Offset(size.width * 0.70f, size.height * 0.36f)
+            drawLine(color = Color.White, start = p1, end = p2, strokeWidth = w * 1.4f, cap = StrokeCap.Round)
+            drawLine(color = Color.White, start = p2, end = p3, strokeWidth = w * 1.4f, cap = StrokeCap.Round)
+        } else {
+            for (i in 1..4) {
+                drawCircle(
+                    color = Color.White.copy(alpha = 1f - i * 0.18f),
+                    radius = half * (i / 4f) - w,
+                    center = center,
+                    style = Stroke(width = w)
+                )
+            }
+        }
+    }
 }
 
 @Composable
