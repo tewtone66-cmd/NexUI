@@ -28,6 +28,11 @@ class NexPrefs(context: Context) {
         get() = sp.getBoolean("biometric_enabled", false)
         set(v) { sp.edit().putBoolean("biometric_enabled", v).apply() }
 
+    /** Isolation mode: screen pinning so the phone's own notification shade / control center stay out. */
+    var kioskMode: Boolean
+        get() = sp.getBoolean("kiosk_mode", true)
+        set(v) { sp.edit().putBoolean("kiosk_mode", v).apply() }
+
     val username: String? get() = sp.getString("nexid_user", null)
     val hasAccount: Boolean get() = username != null
 
